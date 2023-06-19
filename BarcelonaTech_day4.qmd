@@ -1,0 +1,601 @@
+---
+title: |
+  ![](figures/barcelona.png){width=9in} 
+subtitle: "Day 4: Variable Importance and Fairness"
+author: "Przemyslaw Biecek"
+format:
+  revealjs: 
+    theme: [default]
+    slide-number: true
+    touch: true
+    scrollable: true
+    chalkboard: 
+      buttons: false
+    logo: figures/XAI.png
+    footer: BarcelonaTech Summer School -- 22/06/2023
+---
+
+# Paper of the day (1/2)
+
+```{r setup, include=FALSE, echo=FALSE}
+knitr::opts_chunk$set(echo = TRUE, out.width="70%", fig.width = 8, fig.height = 5.5)
+```
+
+
+```{css, echo=FALSE}
+.reveal {
+  font-size: 24px;
+  line-height: 1.6!important;
+}
+code {
+  font-size: 18px!important;
+  line-height: 1.2!important;
+}
+pre {
+  line-height: 1.2!important;
+}
+```
+
+<br><br><br>
+
+![](mid/mid_paper_01.png)
+
+
+## All Models are Wrong, but Many are Useful
+
+- Today we will talk about Permutational Variable Importance. 
+- The idea is quite old. It was used by Breiman, among others, in the construction of random forests. 
+- But today we will talk about its more general formulation introduced in [All Models are Wrong, but Many are Useful: Learning a Variable's Importance by Studying an Entire Class of Prediction Models Simultaneously](https://arxiv.org/abs/1801.01489) by Aaron Fisher, Cynthia Rudin and Francesca Dominici.
+
+<p><center><img src="images/vip_abstract.png" width="80%"/></center></p>
+
+
+## ,,All Models are Wrong, but Many are Useful''  in numbers
+
+- The ,,All Models are Wrong, but Many are Useful'' paper is published on arXiv since 2018
+- Now (2022) it has 919 citations which shows an amazing adoption of presented ideas
+- The paper refers to interesting but kind of forgotten idea of Rashomon perspectives and leads to the discussion about traceability of important variables if their contributions are not independent.
+
+<p><center><img src="images/vip_popular.png" width="85%"/></center></p>
+
+
+## XAI pyramid
+
+- Thinking about the XAI pyramid -> we return to the second level of the pyramid, level related to variable importance
+- We focus on explanations for a single variable but all presented methods may be extended to two or more variables
+
+<p><center><img src="images/xai_piramide_vip.png" width="70%"/></center></p>
+
+## Rashomon perspective
+
+There are many references to Rashomon's perspective in the paper. What is it about?
+
+<p><center><img src="images/rashomon.png" width="90%"/></center></p>
+
+## Statistical Modeling: The Two Cultures. 1/2
+
+Leo Beriman's paper from 20 years ago is an absolute classic today. The article touches on many topics that are more and more relevant from decade to decade.
+
+The main storyline is the difference in approach to data analysis between the two tribes: statistical and algorithmic.
+
+<p><center><img src="images/cultures1.png" width="75%"/></center></p>
+
+From [Statistical Modeling: The Two Cultures](http://www2.math.uu.se/~thulin/mm/breiman.pdf)
+
+## Statistical Modeling: The Two Cultures. 2/2
+
+One of the interesting issues in this paper is the Rashomon perspective. Many models can have very similar performance but very different descriptions of the data.
+
+If we are interested in the importance of variables, why do we get so fixated on analysing just one of these models? 
+
+<p><center><img src="images/cultures2.png" width="75%"/></center></p>
+
+From [Statistical Modeling: The Two Cultures](http://www2.math.uu.se/~thulin/mm/breiman.pdf)
+
+
+# Variable importance
+
+<br><br><br>
+
+![](mid/mid_rashomon_01.png)
+
+
+## Variable importance for Random Forest
+
+From: [https://www.stat.berkeley.edu/~breiman/RandomForests/cc_home.htm#varimp](https://www.stat.berkeley.edu/~breiman/RandomForests/cc_home.htm#varimp)
+
+*In every tree grown in the forest, put down the OOB cases and count the number of votes cast for the correct class. Now randomly permute the values of variable m in the OOB cases and put these cases down the tree. Subtract the number of votes for the correct class in the variable-m-permuted OOB data from the number of votes for the correct class in the untouched OOB data. The average of this number over all trees in the forest is the raw importance score for variable m.*
+
+*If the values of this score from tree to tree are independent, then the standard error can be computed by a standard computation. The correlations of these scores between trees have been computed for a number of data sets and proved to be quite low, therefore we compute standard errors in the classical way, divide the raw score by its standard error to get a z-score, ands assign a significance level to the z-score assuming normality.*
+
+*For each case, consider all the trees for which it is OOB. Subtract the percentage of votes for the correct class in the variable-m-permuted oob data from the percentage of votes for the correct class in the untouched oob data. This is the local importance score for variable m for this case.*
+
+<p><center><img src="images/rashomon_rf.png" width="90%"/></center></p>
+
+
+## Do we need a new measure for Variable Importance?
+
+Let's return to ,,All Models are Wrong...''
+
+From: [http://www.jmlr.org/papers/volume20/18-760/18-760.pdf](http://www.jmlr.org/papers/volume20/18-760/18-760.pdf)
+
+*Several common approaches for variable selection, or for describing relationships between variables, do not necessarily capture a variable’s importance. Null hypothesis testing methods may identify a relationship, but do **not describe the relationship’s strength**. Similarly, checking whether a variable is included by a sparse model-fitting algorithm, such as the Lasso (Hastie et al., 2009), **does not describe the extent to which the variable is relied on.** Partial dependence plots (Breiman et al., 2001; Hastie et al., 2009) **can be difficult to interpret if multiple variables are of interest, or if the prediction model contains interaction effects** .* 
+
+
+*Another common VI procedure is to run a model-fitting algorithm twice, first on all of the data, and then again after removing X1 from the data set. The losses for the **two resulting models are then compared to determine the importance, or “necessity,” of X1** (Gevrey et al., 2003). Because this measure is a function of two prediction models rather than one, it does not measure how much either individual model relies on X1.*
+
+## Motivation
+
+We need
+
+- Model agnostic procedure for assessment of variable importance
+- Assessment of stability/uncertainty beyond the measure of variable importance
+- Rashomon perspective -> use many (good) models to understand significance of a selected variable
+
+
+## Model Reliance
+
+Variable importance as the drop in the loss after  permutation of variable $i$.
+
+$$
+MR(f) = \frac{E\ Loss\ f\ under\ noise}{E\ Loss\ f\ without\ noise}.
+$$
+
+Noise should make $X_i$ uninformative to $Y$ keeping the marginal distribution of $X_i$.
+
+Example estimator
+
+$$
+\widehat{MR}(f) = \frac{\hat e_{switch}(f)}{\hat e_{orig}(f)},
+$$
+
+where
+
+$$
+\hat e_{orig}(f) = \frac 1n \sum_{i=1}^n L(f(y_i; X_{1,i};X_{2,i}))
+$$
+
+and
+
+$$
+\hat e_{switch}(f) = \frac 1{n(n-1)} \sum_{i=1}^n \sum_{j\neq i} L(f(y_j; X_{1,i};X_{2,j})).
+$$
+
+## Model Reliance -- yet another estimator
+
+One can estimate this ratio in a more computationally efficient way
+
+$$
+\hat e_{divide}(f) = \frac 1{2[n/2]} \sum_{i=1}^{[n/2]} L(f(y_i; X_{1,i+[n/2]};X_{2,i})) + L(f(y_{i+[n/2]}; X_{1,i};X_{2,{i+[n/2]}})).
+$$
+
+But the easiest way is to permute the value of the variable $x_i$. This preserves the distribution by destroying the dependence on Y.
+
+$$
+\hat e_{permute}(f) = \frac 1{n} \sum_{i=1}^{n} L(f(y_i; X_{1,\pi(i)};X_{2,i})),
+$$
+where $\pi$ is a random permutation over $\{1, ..., n\}$.
+
+
+## Example: FIFA
+
+Example importance of variables for few selected models: random forest, logistic regression, gradient boosing. Note that importance scores are different between models. Because we have regression task in FIFA data, then here we are using RMSE as a loss function.
+
+From [Explanatory Model Analysis](https://ema.drwhy.ai/). 
+
+
+<p><center><img src="images/vip_fifa.png" width="90%"/></center></p>
+
+
+## Model Class Reliance
+
+One model is not enough. Let's consider  $\varepsilon$-Rashomon set -- set of models with performance $\varepsilon$-close to a reference model $f_{ref}$. More formally:
+
+$$
+\mathcal R(\varepsilon, f_{ref}, \mathcal F) = \{f \in \mathcal F: e_{orig}(f) \leq e_{orig}(f_{ref}) + \varepsilon \}.
+$$
+
+We can now define the importance of a variable not for a single model but for the entire class, we will call it *Model Class Reliance*
+
+$$
+[MCR_-(\varepsilon), MCR_+(\varepsilon)] = \left[ \min_{f\in \mathcal R(\varepsilon)} MR(f); \max_{f\in \mathcal R(\varepsilon)} MR(f) \right].
+$$
+
+<p><center><img src="images/rashomon2.png" width="70%"/></center></p>
+
+From [All Models are Wrong, but Many are Useful](https://arxiv.org/abs/1801.01489).
+
+
+## Rashomon's perspective: open questions
+
+In the paper [Interpretable machine learning: Fundamental principles and 10 grand challenges](https://arxiv.org/abs/2103.11251) the main challenges facing XAI techniques are presented. One of them is: **9. Characterization of the ,,Rashomon'' set of good models**. 
+
+This is an area of active research, currently mainly focused in linear models and tree models.
+
+<p><center><img src="images/rashomon3.png" width="70%"/></center></p>
+
+
+# Other approaches to Variable importance
+
+<br><br><br>
+
+![](mid/mid_rashomon_01.png)
+
+## Average absolute SHAP
+
+Of course, there are many other ways to determine the importance of variables in a model agnostic way. 
+
+We have previously discussed the usefulness of scores based on SHAP values.
+
+$$
+vip^{SHAP}_j = \frac 1n \sum_i |\phi^{SHAP}_{i,j}|.
+$$
+
+<p><center><img src="images/SHAP_vip.png" width="60%"/></center></p>
+
+## Oscillations of Partial Dependence
+
+Similarly, one can construct measures of importance of variables based on partial dependence profiles. These are model agnostic too.
+
+<p><center><img src="images/profile_v4_rf2.png" width="90%"/></center></p>
+
+## Friedman's H-Statistic
+
+In a similar way, we can construct importance measures not only for one variable, but for interactions, e.g. of two variables.
+
+We will say that pairwise interactions occur if
+
+$$
+E_X \left[ \frac{\partial^2 F(x)}{\partial x_j \partial x_k} \right]^2 > 0.
+$$
+
+Let's recall simplified definition of Partial Dependence Profiles for set of variables $S$ (in the estimation, the expected value is replaced by the mean).
+
+$$
+F_S(x_S) = E_{X_{-S}} \left[ F(x_S, x_{-S}) \right].
+$$
+
+After the paper [Predictive learning via rule ensembles](https://arxiv.org/pdf/0811.1679.pdf) (Jerome Friedman, Bogdan Popescu) we can define H-Statistic for pair of variables $j$ and $k$.
+
+$$
+H^2_{jk} = \frac{\sum_i  [\hat F_{jk} (x_{ij}, x_{ik}) - \hat F_{j} (x_{ij}) - \hat F_{k} (x_{ik}) ]^2}{\sum_i \hat F^2_{jk} (x_{ij}, x_{ik}) }.
+$$
+
+In similar way we can do this for one or more variables.
+
+
+
+# ~~Paper~~ Book of the day (2/2)
+
+<br><br><br>
+
+![](mid/mid_paper_01.png)
+
+## Fairness and Machine Learning
+
+- Today we will talk about fairness measures and fairness concepts translated into the ML world. Most of these results were introduced in [Fairness and Machine Learning. Limitations and Opportunities](https://fairmlbook.org/) by Solon Barocas, Moritz Hardt, and Arvind Narayanan (scholars from Berkeley, Cornell, and Princeton)
+
+<p><center><img src="images/fairness_abstract.png" width="80%"/></center></p>
+
+
+## Fairness and Machine Learning in numbers
+
+- The Fairness&ML book was published online in 2018
+- The paper version is still not published  but the online version has already over 1000 citations
+- The book introduces not only fairness measures but also a very interesting framework for critical thinking about fairness and biases in the solution development process that involves ML methods.
+
+<p><img src="images/fairness_popular.png" width="100%"/></p>
+
+# Motivation
+
+<br><br><br>
+
+![](mid/mid_fairness_01.png)
+
+
+## Is discrimination an issue here?
+
+From our first lecture:
+
+- For example, a system showing job ads for truck drivers, presenting these ads more often to men aged 20-50. Is this an example of age and gender discrimination or an increase in the chance of getting an employee?
+- Who should define who should watch the selected advertisement and when
+
+Read more: [https://www.propublica.org](https://www.propublica.org/article/facebook-ads-can-still-discriminate-against-women-and-older-workers-despite-a-civil-rights-settlement)
+
+<p><center><img src="images/fairness_02.png" width="80%"></center></p>
+
+## Is discrimination an issue here?
+
+A high-profile case with a bias leading to gender discrimination in Amazon's CV screening system.
+
+The bias learned from historical data reflected not the quality of employees but the decisions taken by recruiters!
+
+Bias was visible in, for example, the names of secondary schools which in the UK system sometimes allow gender to be identified.
+
+<p><img src="images/xai_fairness_01.png" width="100%"></p>
+
+## Is discrimination an issue here?
+
+Interestingly, more women work at Amazon than at other IT giants. 
+
+No discrimination if you don't try to measure it?
+
+<p><img src="images/xai_fairness_06.png" width="100%"></p>
+
+## Is discrimination an issue here?
+
+A little story, perhaps funny, but a true story.
+A simple hand detection system in a soap dispenser was poorly calibrated and failed to detect hands in people with darker skin colour.
+
+<p><img src="images/xai_fairness_02.png" width="100%"></p>
+
+## Is discrimination an issue here?
+
+Still fun or already something serious?
+
+Photos of Hollywood actors and actresses have different percentages of people of different skin colours than the population of the whole country (here the USA) and certainly different than the whole world. 
+
+If we build a system of judging beauty standards on such images, won't it be naturally biased?
+
+<p><img src="images/xai_fairness_03.png" width="100%"></p>
+
+## Is discrimination an issue here?
+
+And systems for image synthesis or style transfer?
+
+Can one be offended if a GAN intended to enhance attractiveness bleaches a person's skin? 
+It may sound ridiculous, but what if there are thousands of operations or dramas of oversensitive people behind such assessments?
+
+<p><img src="images/xai_fairness_04.png" width="100%"></p>
+
+
+## Is discrimination an issue here?
+
+One of the best-known yet most controversial cases -- is the COMPAS model supporting recidivism risk prediction.
+
+In 2016, the Pro Publica Foundation presented an example of an analysis showing discrimination against black convicts by this model. Since then, there have been many arguments against this model as well as defending the model. We will devote more attention to it in the second part of the lecture.
+
+<p><img src="images/xai_fairness_07.png" width="100%"></p>
+
+# Source of bias
+
+<br><br><br>
+
+![](mid/mid_fairness_01.png)
+
+
+## What does it mean to discriminate?
+
+Concerning European law
+
+<p><img src="images/handbook_01.png" width="100%"></p>
+
+## What does it mean to discriminate?
+
+Concerning European law
+
+<p><img src="images/handbook_02.png" width="100%"></p>
+
+## What does it mean to discriminate?
+
+The situation in the USA is different. The highlighted factors are defined as protected attributes within the USA but not in Europe.
+
+Different history - different problems and legislation.
+
+<p><img src="images/handbook_03.png" width="100%"></p>
+
+## Some sources of bias
+
+Partially based on [Cirillo et al, 2020](https://www.nature.com/articles/s41746-020-0288-5).
+
+* **Historical bias.** The data are correctly sampled and correspond well to the observed relationships, but due to different treatments in the past, some prejudices are encoded in the data. Think about gender and occupation stereotypes
+
+. . .
+
+* **Representation bias.** The available data is not a representative sample of the population of interest. Think about the available facial images of actors, often white men. Or genetic sequences of covid variants mostly collected in developed European countries. Or crime statistics in the regions to which the police are directed.
+
+. . .
+
+* **Measurement bias.** The variable of interest is not directly observable or is difficult to measure and the way it is measured may be distorted by other factors. Think of the results of the mathematics skills assessment (e.g. PISA) measured by tasks on computers not that widely available in some countries.
+
+. . .
+
+* **Evaluation bias.** The evaluation of the algorithm is performed on a population that does not represent all groups. Think of a lung screening algorithm tested primarily on a population of smokers (older men).
+
+. . .
+
+
+* **Proxy bias.** The algorithm uses variables that are proxies for protected attributes. Think of male/female-only schools where the gender effect can be hidden under the school effect.
+
+## Desirable and undesirable bias
+
+Not every difference in treatment is harmful. Sometimes it is possible to treat the genders differently to both benefit from these differences (e.g. when choosing appropriately gender-specific drugs). 
+
+A very interesting discussion on the so-called desirable bias can be found in the article [Sex and gender differences and biases in artificial intelligence for biomedicine and healthcare (2020), Cirillo et al](https://www.nature.com/articles/s41746-020-0288-5).
+
+<p><img src="images/healthcare_01.png" width="100%"></p>
+
+
+## Where is bias?
+
+Let us assume that we already know what bias is. At what point in the development of the model can it appear?
+
+It turns out that at any point.
+
+<p><img src="images/fairness_process_02.png" width="100%"></p>
+
+## Where is bias?
+
+A very interesting example of an unexpected bias is the StreetBumps project from Boston. 
+
+Initially, it seemed that an app on smartphones is a panacea for many of the problems of identifying spots that need repair in the city. 
+
+But...
+
+<p><img src="images/fairness_process_03.png" width="100%"></p>
+
+
+# Fairness metrics
+
+<br><br><br>
+
+![](mid/mid_fairness_01.png)
+
+
+## Notation
+
+<p><img src="images/fairness_measure_01.png" width="100%"></p>
+
+- Let $A \in \{a,b, ...\}$ stand for protected group and values $A \neq a$ denote membership to unprivileged subgroups while $A = a$ membership to privileged subgroup. To simplify the notation, we will treat this as a binary variable (so $A = b$ will denote membership to an unprivileged subgroup), but all results hold if $A$ has a larger number of groups.      
+- Let $Y \in \{0,1\}$ be a binary label (binary target = binary classification) where $1$ is preferred, favorable outcome.
+- Let $S \in [0,1]$ be a probabilistic score of the model, and $\hat{Y} \in \{0,1\}$ is the binarised model response, so $\hat{Y} = 1$ when $S \geq 0.5$, otherwise $\hat{Y} = 0$.
+
+
+Here are possible situations for the subgroup $A=a$. We can draw up the same table for each of the subgroups.
+
+
+## Group fairness / statistical parity / independence / demographic parity
+
+<p><img src="images/fairness_measure_02.png" width="100%"></p>
+
+## Group fairness / statistical parity / independence / demographic parity
+
+<p><img src="images/fairness_measure_04.png" width="100%"></p>
+
+
+It would be hard for any classifier to maintain the same relations between subgroups. That is why some margins around the perfect agreement are needed. To address this issue, we accepted the four-fifths rule as the benchmark for discrimination rate, which states that *"A selection rate for any race, sex, or ethnic group which is less than four-fifths (*$\frac{4}{5}$*) (or eighty percent) of the rate for the group with the highest rate will generally be regarded by the Federal enforcement agencies as evidence of adverse impact[...]."* The selection rate is originally represented by statistical parity, but we adopted this rule to define acceptable rates between subgroups for all metrics. There are a few caveats to the preceding citation concerning the size of the sample and the boundary itself. Nevertheless, the four-fifths rule is an excellent guideline to adhere to. In the implementation, this boundary is represented by $\varepsilon$, and it is adjustable by the user, but the default value will be 0.8. 
+This rule is often used, but users should check if the fairness criteria should be set differently in each case.
+
+
+
+## Equal opportunity
+
+<p><img src="images/fairness_measure_05.png" width="100%"></p>
+
+## Predictive equality
+
+<p><img src="images/fairness_measure_06.png" width="100%"></p>
+
+## Equalized odds, Separation, Positive Rate Parity
+
+<p><img src="images/fairness_measure_07.png" width="100%"></p>
+
+## Positive Predictive Parity
+
+<p><img src="images/fairness_measure_08.png" width="100%"></p>
+
+## Negative Predictive Parity
+
+<p><img src="images/fairness_measure_09.png" width="100%"></p>
+
+## Predictive Rate Parity, Sufficiency
+
+<p><img src="images/fairness_measure_10.png" width="100%"></p>
+
+## Whether to sentence a prisoner
+
+<p><img src="images/fairness_measure_11.png" width="100%"></p>
+
+Let us illustrate the intuition behind Independence, Separation, and Sufficiency criteria using the well-known example of the COMPAS model for estimating recidivism risk.
+Fulfilling the Independence criterion means that the rate of sentenced prisoners should be equal in each subpopulation. It can be said that such an approach is fair from society's perspective.
+
+Fulfilling the Separation criterion means that the fraction of innocents/guilty sentenced should be equal in subgroups. Such an approach is fair from the prisoner's perspective. The reasoning is the following: *"If I am innocent, I should have the same chance of acquittal regardless of sub-population"*. This was the expectation presented by the ProPublica Foundation in their study.
+
+Meeting the Sufficiency criterion means that there should be an equal fraction of innocents among the convicted, similarly, for the non-convicted. This approach is fair from the judge's perspective. The reasoning is the following: *"If I convicted someone, he should have the same chance of being innocent regardless of the sub-population"*. This approach is presented by the company developing the COMPAS model, Northpointe.
+Unfortunately, as we have already written, it is not possible to meet all these criteria at the same time.
+
+
+While defining the metrics above, we assumed only two subgroups. This was done to facilitate notation, but there might be more unprivileged subgroups. A perfectly fair model would pass all criteria for each subgroup.
+
+However tempting it is to think that all the criteria described above can be met at the same time, unfortunately, this is not possible. Barocas et al. (2019) show that, apart from a few hypothetical situations, no two of *{Independence, Separation, Sufficiency}* can be fulfilled simultaneously. So we are left balancing between the degree of imbalance of the different criteria or deciding to control only one criterion.
+
+
+
+## The Fairness Trade-off (the impossibility theorem)
+
+- Except for trivial cases all these criteria cannot be satisfied jointly.
+- In fact, each two out of {Sufficiency, Separation, Independence} are mutually exclusive.
+
+Source: [https://fairmlbook.org/](https://fairmlbook.org/)
+
+
+## You can't be fair, but you can know how unfair you are
+
+The possible fulfilment of fairness can be summarised in a single graph - the fairness check.
+
+<p><center><img src="images/fairness_measure_13.png" width="70%"></center></p>
+
+The four-fifths rule (Code of Federal Regulations, 1978):
+
+*"A selection rate for any race, sex, or ethnic group which is less than four-fifths (4 / 5) (or eighty percent) of the rate for the group with the highest rate will generally be regarded by the Federal enforcement agencies as evidence of adverse impact[...]."*
+
+
+#  Mitigation
+
+<br><br><br>
+
+![](mid/mid_fairness_01.png)
+
+
+## Bias mitigation strategies
+
+- **Data Pre-processing.** Change data to improve model performance, for example, use subsampling or case weighting.
+- **Model In-processing.** Modify the optimized criterion to include fairness functions, e.g. through adversarial training
+- **Model Post-processing.** Modify the resulting model scores or final decisions, e.g., using different thresholds.
+
+## Demo
+
+AI Fairness 360 - Demo: [https://aif360.mybluemix.net/data](https://aif360.mybluemix.net/data)
+
+<p><img src="images/fairness_demo.png" width="100%"></p>
+
+
+
+# Take-home message
+
+<br><br><br>
+
+![](mid/mid_home_01.png)
+
+
+---
+
+- **Why would we use only one model** to infer the importance of a variable? This is very old-fashioned thinking. We should use the Rashomon perspective instead.
+- The idea of **permutation importance** of variables was **presented in the article on random forests** by Leo Breiman. But it is transferable to other model classes.
+- An interesting alternative is Model Class Reliance. It allows you to capture the **importance** of a variable not only from the perspective of a single model but of an **entire class of models**.
+- There are many other approaches to assessing the importance of a variable or pairs of variables (interactions). How to assess which are better? This is an interesting problem for research.
+- Rashomon is an old film, but why not watch it sometime soon?
+
+- Not every difference in the treatment of groups is discrimination. There are **desirable** and **undesirable** sources of **bias**.
+- A number of different measures are used to evaluate the fairness of a model. And while it is **impossible to satisfy them all**, it is useful to know what they measure in order to choose the **right measure in the right situation**.
+
+
+# Hands-on
+
+<br><br><br>
+
+![](mid/mid_hands_01.png)
+
+## Step 6. Variable-importance
+
+### SARS-COV-2 case study
+
+See: [https://rml.mi2.ai/06_vi.html](https://rml.mi2.ai/06_vi.html)
+
+![ ](figures/comic_08.png)
+
+
+# References
+
+<br><br><br>
+
+![](mid/mid_references_01.png)
+
+---
+
+## References
+
+- eXplainable Machine Learning course for Machine Learning (MSc) studies at the University of Warsaw. [https://github.com/mim-uw/eXplainableMachineLearning-2023](https://github.com/mim-uw/eXplainableMachineLearning-2023)
+- Explanatory Model Analysis. Explore, Explain, and Examine Predictive Models. With examples in R and Python.  [https://ema.drwhy.ai/](https://ema.drwhy.ai/)
+- The Hitchhiker's Guide to Responsible Machine Learning. Shorter summary of EMA book. [https://rml.mi2.ai/](https://rml.mi2.ai/)
+

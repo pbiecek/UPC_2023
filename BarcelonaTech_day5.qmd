@@ -1,0 +1,84 @@
+---
+title: |
+  ![](figures/barcelona.png){width=9in} 
+subtitle: "Day 5: Presentations of projects"
+author: "Przemyslaw Biecek"
+format:
+  revealjs: 
+    theme: [default]
+    slide-number: true
+    touch: true
+    scrollable: true
+    chalkboard: 
+      buttons: false
+    logo: figures/XAI.png
+    footer: BarcelonaTech Summer School -- 19/06/2023
+---
+
+# Presentations!
+
+<br><br><br>
+
+![](mid/mid_questions_01.png)
+
+```{r setup, include=FALSE, echo=FALSE}
+knitr::opts_chunk$set(echo = TRUE, out.width="70%", fig.width = 8, fig.height = 5.5)
+```
+
+
+```{css, echo=FALSE}
+.reveal {
+  font-size: 24px;
+  line-height: 1.6!important;
+}
+code {
+  font-size: 18px!important;
+  line-height: 1.2!important;
+}
+pre {
+  line-height: 1.2!important;
+}
+```
+
+
+# Questions?
+
+<br><br><br>
+
+![](mid/mid_questions_01.png)
+
+
+# Take-home message
+
+<br><br><br>
+
+![](mid/mid_home_01.png)
+
+---
+
+## Shift in our focus: Statistics
+
+- Statistical analysis of data most often assumes a great deal of knowledge about the phenomenon. Understanding the data allows to choose appropriate transformations, representations. Verification is oriented toward hypothesis testing, such as by p-values
+
+<p><center><img src="images/shift1.png" width="100%"></center></p>
+
+## Shift in our focus: Machine Learning
+
+- Machine learning puts a priority on optimizing the model, especially for performance. There is a lot of searching through the space of possible solutions here to find the best one
+- Knowledge of the phenomenon is no longer so important
+
+<p><center><img src="images/shift2.png" width="100%"></center></p>
+
+## Shift in our focus: Human Oriented ML?
+
+- What's next. If model building can be easily and quickly automated, in-depth model verification will become more important
+- This is where models are created seamlessly according to the needs of the user, and the user can focus on decisions supported by the models 
+
+<p><center><img src="images/shift3.png" width="100%"></center></p>
+
+
+---
+
+![ ](figures/rml_comic_12.png)
+
+
