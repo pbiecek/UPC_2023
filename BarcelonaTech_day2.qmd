@@ -1,0 +1,755 @@
+---
+title: |
+  ![](figures/barcelona.png){width=9in} 
+subtitle: "Day 2: SHAP / Break-Down and LIME"
+author: "Przemyslaw Biecek"
+format:
+  revealjs: 
+    theme: [default]
+    slide-number: true
+    touch: true
+    scrollable: true
+    chalkboard: 
+      buttons: false
+    logo: figures/XAI.png
+    footer: BarcelonaTech Summer School -- 20/06/2023
+---
+
+# Paper of the day (1/2)
+
+<br><br><br>
+
+![](mid/mid_paper_01.png)
+
+```{r setup, include=FALSE, echo=FALSE}
+knitr::opts_chunk$set(echo = TRUE, out.width="70%", fig.width = 8, fig.height = 5.5)
+```
+
+```{css, echo=FALSE}
+.reveal {
+  font-size: 24px;
+  line-height: 1.6!important;
+}
+code {
+  font-size: 18px!important;
+  line-height: 1.2!important;
+}
+pre {
+  line-height: 1.2!important;
+}
+```
+
+## A Unified Approach to Interpreting Model Predictions
+
+- In this course, you will learn about the main methods and tools related to XAI, but also (and this may be unique) about selected papers and researchers.
+- That's why we will start this and the next classes with a brief presentation of a high-impact article from the XAI field + few words about the author of this article.
+- Today we are talking about Shapley values, so the article of the day will be the 2017 SHAP method article.
+- It will be about the paper [A Unified Approach to Interpreting Model Predictions](https://papers.nips.cc/paper/2017/hash/8a20a8621978632d76c43dfd28b67767-Abstract.html)
+
+<p><img src="images/shap_abstract.png" width="100%"/></p>
+
+
+## SHAP paper in numbers
+
+- This article is really exceptional, it will soon exceed 10,000 citations which is an amazing achievement.
+- The article has several strong points, which we will talk about later today, one of which is the available software that allows you to easily use the described method
+- This software is a shap library, which on GitHub has skyrocketing numbers of stars and downloads
+
+<p><img src="images/shap_popular2.png" width="100%"/></p>
+
+<p><img src="images/shap_popular3.png" width="100%"/></p>
+
+
+## Why SHAP?
+
+- Shapley values are currently the most popular technique for model explanations (almost in each category: local, global, model agnostic, model specific...)
+- if you remember only one method after this course, let it be the SHAP
+- It has more than five years of development. In the list of major XAI methods, you can also find its various extensions like ShapleyFlow or ASV (more about them later)
+- figures below are from the paper [Explainable AI Methods - A Brief Overview](https://link.springer.com/chapter/10.1007/978-3-031-04083-2_2)
+
+<p><img src="images/shap_intro1.png" width="100%"/></p>
+
+<p><img src="images/shap_intro2.png" width="100%"/></p>
+
+
+
+
+## XAI pyramid
+
+- We will use an XAI pyramid to present new methods during this course. 
+- Today we will mainly talk about the method of local explanations - Shapley values, which for a single observation determines the importance of variables.
+
+<p><img src="images/xai_piramide_shap1.png" width="100%"/></p>
+
+## XAI pyramid
+
+- This is one of the three fundamental methods of explaining the behaviour of predictive models.
+- The following three panels introduce these three concepts; we will return to them in one week and two weeks.
+- SHAP corresponds to panel C. We try to explain the behaviour of the model by decomposing the distance between this particular prediction and the average prediction of the model.
+
+<p><img src="images/xai_piramide_shap2.png" width="100%"/></p>
+
+
+
+# Shapley values
+
+<br><br><br>
+
+![](mid/mid_players_01.png)
+
+
+## Notation
+
+- We have set of $P = \{1, ..., p\}$ players
+- For each coalition, i.e. subset $S	\subseteq P$ we can calculate the payout $v(S)$ and $v(\{\varnothing\}) = 0$
+- We want to fairly distribute the payout $v(P)$
+- Optimal attribution for player $i\in P$ will be denoted as $\phi_i$ 
+
+## Motivational example 1/3
+
+How to divide the reward?
+
+- Three parties A, B and C took part in the election. 
+- As a result of the election, parties A and B each have 49% representation in the parliament and party C has 2% representation. 
+- Let's assume that A and C formed a government. 
+- How to fairly divide the prize (ministries)? 
+- What share of the prize should party C have?
+
+
+Note that any two parties can form a government.  In that case, should the prize for C be equal to or less than that for A?
+
+<p><img src="images/shap_v_01.png" width="100%"/></p>
+
+
+## Motivational example 2/3
+
+Students A, B and C carry out a project together. With this payoff table, determine what portion of the award each student should get.
+
+<p><img src="images/shap_v_02.png" width="100%"/></p>
+
+
+## Motivational example 2/3 cont.
+
+Students A, B and C carry out a project together. With this payoff table, determine what portion of the award each student should get.
+
+<p><img src="images/shap_v_03.png" width="100%"/></p>
+
+
+## Motivational example 3/3
+
+Students A, B and C carry out a project together. With this payoff table, determine what portion of the award each student should get.
+
+<p><img src="images/shap_v_04.png" width="100%"/></p>
+
+## Motivational example 3/3 cont.
+ 
+Students A, B and C carry out a project together. With this payoff table, determine what portion of the award each student should get.
+
+<p><img src="images/shap_v_05.png" width="100%"/></p>
+
+
+
+## Required properties of fair payout
+
+One can define various desirable properties of fair reward distribution. The following seem to be natural (or at least they were for Lord Shapley).
+
+- **Efficiency**: all contributions sum up to the final reward
+
+$$
+\sum_j \phi_j = v(P)
+$$
+
+- **Symmetry**: if players $i$ and $j$ contributed in the same way to each coalition then they get the same reward
+
+$$
+\forall_S v(S \cup \{i\}) = v(S \cup \{j\}) 	\Rightarrow \phi_i = \phi_j
+$$
+
+- **Dummy**: if player $i$ does not contribute then its reward is $0$
+
+$$
+\forall_S v(S \cup \{i\}) = v(S) 	\Rightarrow \phi_i = 0
+$$
+
+- **Additivity**: reward in sum of games $v_1$ and $v_2$ is sum of rewards
+
+$$
+\forall_S v(S) = v_1(S) + v_2(S) 	\Rightarrow \phi_i = \phi_{1,i} + \phi_{2,i} 
+$$
+
+
+## Shapley values (via permutations)
+
+- Fair reward sharing strategy for player $j\in P$ will be denoted as $\phi_j$. Surprise, these are Shapley values.
+- Note that added value of player $j$ to coalition $S$ is $v(S \cup \{j\}) - v(S)$
+- Shapley values are defined as
+
+$$
+\phi_j = \frac{1}{|P|!} \sum_{\pi \in \Pi} (v(S_j^\pi \cup \{j\}) - v(S_j^\pi))
+$$
+
+where $\Pi$ is a set of all possible permutations of players $P$ while $S_j^\pi$ is a set of players that are before player $j$ in permutation $\pi$.
+
+
+- Instead of trying all $\Pi$ permutations one can use only $B$ random permutations to estimate $\phi_j$
+
+$$
+\hat\phi_j = \frac{1}{|B|} \sum_{\pi \in B} (v(S_j^\pi \cup \{j\}) - v(S_j^\pi))
+$$
+
+## Shapley values (via subsets)
+
+<p><img src="images/shap_order.png" width="100%"/></p>
+
+
+- Once you have a given set $S_j^\pi$ of players that are before $j$ in a permutation $\pi$, then the added value of $j$ is the same for all permutations that starts with $S_j^\pi$. There is $(|P| - |S_j^\pi| - 1)!$ of such permutations.
+- Also the order of players in $S_j^\pi$ does not matter as the added value of $j$ is the same for all permutations of $S_j^\pi$. There is $|S_j^\pi|!$ of such orders.
+- Formula for Shapley values can be rewritten in a following way
+
+$$
+\phi_j = \sum_{S \subseteq P / \{j\}}  \frac{|S|! (|P| - |S| - 1)!}{|P|!} (v(S \cup \{j\}) - v(S))
+$$
+
+- The advantage is summing over subsets, of which there are $2^p$ instead of permutations, of which there are $p!$.
+
+
+## Motivational example 3/3 solution
+ 
+Students A, B and C carry out a project together. With this payoff table, determine what portion of the award each student should get.
+
+<p><img src="images/shap_v_05.png" width="100%"/></p>
+
+- Now we can calculate the Shapley values and they will be a fair distribution of the reward between students A, B and C
+
+$$
+\phi_{A} = \frac{1}{6} (10*2 + 20 + 10 + 40*2) = 21 \frac 23
+$$
+
+$$
+\phi_{B} = \frac{1}{6} (30*2 + 40 + 10 + 40*2) = 31 \frac 23
+$$
+
+$$
+\phi_{C} = \frac{1}{6} (50*2 + 50 + 30 + 50*2) = 46 \frac 23
+$$
+
+# Shapley values for Machine Learning Models
+
+<br><br><br>
+
+![](mid/mid_players_01.png)
+
+## Definitions
+
+- Let's start with local explanations, focused on single point $x$ and the model prediction $f(x)$.
+
+- Now instead of players, you can think about variables. We will distribute a reward between variables to recognize their contribution to the model prediction $f(x)$.
+
+- Reward to be distributed among players:
+
+$$
+f(x) - E f(x)
+$$
+
+. . .
+
+- Payoff value function for coalition $S$
+
+$$
+v(S) = f_S(x_S) - E f(x)
+$$
+where $f_S(x_S)$ is the model prediction maginalized over $P/S$ variables, i.e.
+$$
+f_S(x_S) = \int_{X_{-S}} f(x_S, X_{-S}) dP(X_{-S})
+$$
+
+. . .
+
+- Shapley values via permutations
+
+$$
+\phi_j = \frac{1}{|P|!} \sum_{\pi \in \Pi} v(S_j^\pi \cup \{j\}) - v(S_j^\pi) 
+$$
+
+**Note:** $|P|!$ grows quite fast. $10! = 3 628 800$.  Good news: instead of checking all permutations, one can focus on random $M$ permutations. Also calculation of $f_S(x_S)$ may be computationally heavy for large datasets. But it may be approximated on a subset of observations.
+
+
+## How to understand the value function
+
+- Let's take a look at how the value function works for a set S of players using the Titanic data example and an explanation for the observations age=8, class=1st, fare=72, ....
+- Let's consider the process of conditioning the distribution of data on consecutive variables. In the figure below, we start the prediction distribution for all data, this corresponds to a coalition without players.
+- Then we add the player `age`, which means conditioning the data with the condition `age=8`. Implementation-wise, assuming the independence of the variables, this would correspond to replacing the age value in each observation with the value 8.
+- Next, we add the class variable to the coalition, which means further conditioning the data with the condition `class=1st`. In the next step, we add fare to the coalition, and so on.
+- In the last step, once all the players are in the coalition, that is, all the variables, the model's predictions will reduce to a single point $f(x)$
+
+<p><img src="images/xai_bd_1.png" width="100%"/></p>
+
+- In fact, we are not interested in the distributions of conditional predictions, only in the expected value of these distributions. This is what our value function is.
+
+<p><img src="images/xai_bd_2.png" width="100%"/></p>
+
+- The added value of variable $j$ when added to the coalition $S$ is the change in expected value. In the example below, adding the `class` variable to a coalition with the `age` variable increases the reward by $0.086$.
+
+<p><img src="images/xai_bd_3.png" width="100%"/></p>
+
+## Average of conditional contributions
+
+- The Shapley value is the average after all (or a large number) of the orders in which variables are added to the coalition. 
+- For diagnostic purposes, on graphs, we can also highlight the distribution of added values for different coalitions to get information on how much the effect of a given variable is additive, i.e. leads to the same added value regardless of the previous composition of the coalition.
+
+<p><img src="images/xai_bd_4.png" width="100%"/></p>
+
+
+- Order matters. For a model that allows interactions, it is easy to find an example of a non-additive effect of a variable. How to explain the different effects of the age variable in the figure below?
+
+<p><img src="images/xai_bd_5.png" width="100%"/></p>
+
+
+
+## SHAP values
+
+$$
+\phi_j = \frac{1}{|P|!} \sum_{\pi \in \Pi} v(S_j^\pi \cup \{j\}) - v(S_j^\pi) 
+$$
+
+- The $v(S \cup \{j\}) - v(S)$ may be approximated with $\hat f_{S \cup \{j\}}(x^*) - \hat f_S(x^*)$ where
+
+$$
+\hat f_S(x^*) = \sum_{i=1}^N f(x^*_S, x^i_{-S}) 
+$$
+
+
+- The exact calculation of Shapley values leads to the formula
+
+$$
+\phi_j(x^*) = \frac{1}{N |P|!} \sum_{\pi \in \Pi} \sum_{i=1}^{N}  f(x^*_{S^\pi \cup \{j\}}, x^i_{-S^\pi \cup \{j\}}) - f(x^*_{S^\pi}, x^i_{-S^\pi}) 
+$$
+
+- **Note:** For estimation, one can use an only subset of permutations from $\Pi$ and a subset of observations $\{1, ..., N\}$.
+
+
+## Kernel SHAP 
+
+
+- Accurate calculation of Shapley values is a very time-consuming task. 
+- The Kernel-SHAP method makes it possible to estimate these values at a lower computational cost - and thus faster.
+- You can think of it as an adaptation of the LIME method. The explanation, too, is a linear model approximation of the model in an interpretable feature space.
+- The interpretable variable space is a binary space describing whether a variable enters a coalition or not. If it enters the coalition then we use the value of this variable from the observation being explained. If it doesn't then we sample a value from the dataset in its place.
+- We compute Shapley values by weighted linear regression using an interpretable representation of the variables as input. Linear regression coefficients are estimates of Shapley values.
+
+<p><img src="images/shap_kernel.png" width="100%"/></p>
+
+
+
+## Tree SHAP
+
+Trees have nice structure, it makes them easier to analyse with Shapley values.
+
+For a model that is a weighted sum of trees (bagging, boosting, random forest) the Shapley values for the model are weighted Shapley values for each tree.
+
+Let’s consider a brute force algorithm for a single tree (processing from leaves to the root):
+
+- for a leaf, it returns the value in the leaf,
+- for a node with a variable from S it returns the value of a left or right node given the variable’s value,
+- for a node without a variable from S it returns the weighted average of the left and right nodes.
+
+
+The brute force algorithm has complexity $O(2^m)$
+
+but one can go down to $O(XTLD^2) = O(TLD \cdot XD)$
+
+
+
+## Tree SHAP - an example
+
+- Let’s calculate $val(S)$ for `x = (age: 5, fare:20, sibsp:2)`.
+
+
+<p><img src="images/xai_bd_6.png" width="100%"/></p>
+
+- where
+
+$$
+v(S) = \int_{X_{-S}} f(x_S, X_{-S}) dP(X_{-S}) - E f(x)
+$$
+
+
+## From local to global -- Feature importance
+
+- The SHAP method gives local explanations, i.e. explanations for each single observation. But we can convert them to global explanations by aggregating the explanations for individual observations.
+- For example, we can assess the validity of a variable by counting the average modulus of SHAP explanations.
+- Such a measure of the importance of variables does not depend on the model structure and can be used to compare models.
+- Below is an example for the model trained for Titanic data
+
+<p><img src="images/shap_global_3.png" width="100%"/></p>
+
+
+
+## From local to global -- Summary plot
+
+- One of the most useful statistics is a plot summarizing the distribution of Shapley values for the data for each variable.
+- On the OX axis are presented the Shapley values, in the rows are the variables. The color indicates whether an observation had a high or low value in that variable.
+- From the graph you can read which variables are important (they have a large spread of points)
+- You can read what is the relationship between the variable and the Shapley value, whether the color has a monotonic gradation or there are some dependencies
+- You can read the distribution of Shapley values
+
+<p><img src="images/shap_global_2.png" width="100%"/></p>
+
+
+## From local to global -- Dependence plot
+
+- If we plot the Shapley values as functions of the value of the original variable, it is possible to see what kind of relationship exists between this variable and the average result.
+- This type of plots allows you to choose the transformations of the variable, and better understand the relationship between this variable and the result of the model
+
+<p><img src="images/shap_global_4.png" width="100%"/></p>
+
+- We can additionally color the graph depending on one more variable (in the example below, it is gender) to see if an interaction is present in the model. In this case, the attributes of the model will depend on the value of this additional variable.
+
+<p><img src="images/shap_global_5.png" width="100%"/></p>
+
+
+
+# Paper of the day (2/2)
+
+<br><br><br>
+
+![](mid/mid_paper_01.png)
+
+
+## "Why Should I Trust You?": Explaining the Predictions of Any Classifier
+
+- In this course, you will learn about the XAI methods and tools, but also about selected papers and researchers.
+- Today we will talk about LIME method, so the article of the day will be the LIME paper from 2016: ["Why Should I Trust You?" Explaining the Predictions of Any Classifier](https://www.kdd.org/kdd2016/papers/files/rfp0573-ribeiroA.pdf)
+
+<p><center><img src="images/lime_abstract.png" width="80%"/></center></p>
+
+
+## LIME paper in numbers
+
+- The LIME paper has over 10k citations
+- The `lime` python package has today over 10k start on github
+- The *husky example* is now the most frequently presented example calling for debugging models (more on this later)
+
+<p><img src="images/lime_popular2.png" width="100%"/></p>
+
+<p><img src="images/lime_popular3.png" width="100%"/></p>
+
+
+## Why LIME?
+
+- Gives sparse explanations based on an interpretable data space
+- Very popular, especially for computer vision / NLP tasks
+- Very tempting approach -- explain a complex model by a simpler surrogate (although intuition can be deceptive here)
+
+<p><img src="images/shap_intro1.png" width="100%"/></p>
+
+<p><img src="images/shap_intro2.png" width="100%"/></p>
+
+- Figures below are from the paper [Explainable AI Methods - A Brief Overview](https://link.springer.com/chapter/10.1007/978-3-031-04083-2_2)
+
+## XAI pyramid
+
+- LIME is based on one of the three fundamental approaches to explanation of predictive models.
+- LIME corresponds to panel B -- approximation with linear surrogate model to get some understanding about black-box model behavior around $x$
+
+<p><img src="images/xai_piramide_shap2.png" width="100%"/></p>
+
+
+# LIME - Local Interpretable Model-agnostic Explanations
+
+<br><br><br>
+
+![](mid/mid_limes_01.png)
+
+## Start with Why
+
+Desired characteristics of explanations (from LIME paper)
+
+- Explanations should be easy to undestand = interpretable (simple, sparse, based on interpretable features) for a user
+- Good explanation should be model-agnostic, i.e. does not depend on model structure. This will help to compare explanations for different models
+- Local fidelity of explanations
+
+<p><center><img src="images/lime_intro.png" width="85%"/><br>
+Explanation process. Figure from LIME paper</center></p>
+
+
+## Core idea
+
+The core ideas behind LIME are:
+
+- Input to the model will be transformed into an  interpretable feature space
+- Local model behaviour will be explained by approximating it by an interpretable surrogate model (e.g. a shallow tree or a linear regression model)
+- Local approximation is trained on artificial points generated from the neighborhood of the observation of interest $x$
+
+<p><center><img src="images/lime_introduction.png" width="50%"/></center><br>Figure from EMA book</p>
+
+
+## Fidelity-Interpretability Trade-off
+
+The explanation will be a model $g$ that approximates the behavior of the complex model $f$ and is as simple as possible
+
+$$
+\hat g = \arg \min_{g \in G} L\{f, g, \pi(x)\} + \Omega(g)
+$$
+
+where
+
+- $f()$ is a model to be explained
+- $x$ is an observation of interest
+- $G$ is a class of interpretable models
+- $\hat g$ is an explanation, a model from class $G$ 
+- $\Omega(g)$ is a penalty function that measures complexity of models from $G$. For regression models it could be the number of non-zero coefficients, for trees the number of nodes. For simplicity, we will consider a family of models $G$ such that all models in this family have complexity $K$
+- $L()$ a function measuring the discrepancy between models $f$ and $g$ in the neighborhood $\pi(x^*)$
+
+
+## LIME Algorithm
+
+Explanations can be calculated with a following instructions. 
+
+1. Let $x'$ = $h$(x) be a version of $x$ in the interpretable data space
+2. for i in 1...N {
+3. \ \ \ \ \ \ z'[i] = `sample_around`(x') 
+4. \ \ \ \ \ \ y'[i] = $f$(z'[i])
+5. \ \ \ \ \ \ w'[i] = `similarity`(x', z'[i]) 
+6. }
+7. return `K-LASSO`(y', x', w')
+
+where
+
+- $x$ -- an observation to be explained
+- $N$  -- sample size needed to fit a glass-box model 
+- $K$  -- complexity, the maximum number of variables in the glass-box model
+- `similarity` -- a distance function in the original data space
+- `K-LASSO` -- a weighted LASSO linear-regression model that selects K variables
+- w' -- weights that measure of the similarity between original observation $x$ and new artificially generated observations. Weights may be based on $\exp(-d)$ function, where $d$ is an Euclidean distance, cosine distance or other distance measure (depending on the data structure),
+
+
+## Example: Duck or horse? 1/4
+
+<p><center><img src="images/lime_intro2.png" width="30%"/></center></p>
+
+Let's see how LIME can be used to solve this problem.
+
+**Initial settings**
+
+- Let's consider a VGG16 neural network trained on the ImageNet data
+- Input size are images 244 $\times$ 244 pixels. We have 1000 potential categories for the training data
+- The input space is of dimension 3 $\times$ 244 $\times$ 244, i.e. it is a 178 608-dimensional space
+- We need to translate the input to the interpretable data space, here image will be transformed into superpixels, which are treated as binary features (see an example later)
+- In this example $f()$ operates on space with $178 608$ dimensions, while the glass-box model $g()$ operates on a binary space with $100$ dimensions
+- We will ask for explanations of complexity 10
+
+## Example: Duck or horse? 2/4
+
+**Interpretable data space**
+
+- Interpretable data space is a binary space that encodes presence or absence of selected features
+- The interpretable space can be constructed globally (e.g. for tabular data) or locally (e.g. for images)
+- For image data, the most common approach constructs an interpretable data space for each observation separately by using a segmentation algorithm.
+- The result is the division of the input image into a certain number of regions/called superpixels
+
+<p><img src="images/lime_ex_1.png" width="100%"/></p>
+
+## Example: Duck or horse? 3/4
+
+**Sampling around x**
+
+- We sample around the observation x' in the interpretable space
+- Since it's a binary space in which an observation $x$ is represented by a vector of ones
+- Sampling corresponds to selecting randomly coordinates that will be flipped to zero
+- We need N of such new observations
+
+<p><img src="images/lime_ex_2.png" width="100%"/></p>
+
+## Example: Duck or horse? 4/4
+
+**Fitting of an interpretable model**
+
+- For new data, we make predictions with model $f()$ 
+- And then for the observations in the interpretable representation we train a K-LASSO model which will have $K$ non-zero coefficients
+- We can use the $R^2$ coefficient to assess the quality of fit of the model $g()$
+
+<p><center><img src="images/lime_ex_3.png" width="75%"/></center></p>
+
+
+## Interpretable data representations
+
+How to transform the input data into a binary vector of shorter length?
+
+- For image data interpretable feature space is commonly based on  superpixels, i.e. through image segmentation
+- For text data, words or groups of words are frequently used as interpretable variables
+- For tabular data, continuous variables are often discretized to obtain interpretable bianary variables. In the case of categorical variables, combination of levels is used to get bianary variables.
+
+
+<p><center><img src="images/lime_ex_8.png" width="75%"/></center><br>
+Example from [LIME github](https://marcotcr.github.io/lime/tutorials/Lime%20-%20basic%20usage%2C%20two%20class%20case.html)</p>
+
+
+## Model debugging 1/3
+
+- There are many reasons to know and develop XAI techniques
+- One of them is the ability to debug the model
+- The most well-known example is improving the performance of a network that misclassified the following image
+- How LIME can help here?
+
+<p><center><img src="images/lime_ex_9.png" width="25%"/></center><br>
+Figure from <a href="http://www.facweb.iitkgp.ac.in/~niloy/COURSE/Spring2018/IntelligentSystem/PPT_2018/why_should_i_trust_ppt.pdf">presentation about LIME</a> by Sameer Singh</p>
+
+## Model debugging 2/3
+
+- The model works very well. Classification between husky of wolf in accurate in almost every image except one. Why?
+
+
+<p><center><img src="images/lime_ex_6.png" width="70%"/></center><br>
+Figure from <a href="http://www.facweb.iitkgp.ac.in/~niloy/COURSE/Spring2018/IntelligentSystem/PPT_2018/why_should_i_trust_ppt.pdf">presentation about LIME</a> by Sameer Singh</p>
+
+## Model debugging 3/3
+
+- Can LIME's explanation help us find the source of the problem?
+- It turns out that in the case of classification as a wolf, the important feature is the snow in the background
+- Effectively, the model has learned to recognize snow in the background and so classifies as a wolf class
+- This is not a feature that people use for classification wolf/husky. But would you sacrifice the quality of the model to remove the dependence on using the background for classification?
+
+
+<p><center><img src="images/lime_ex_5.png" width="100%"/></center><br>
+Figure from <a href="http://www.facweb.iitkgp.ac.in/~niloy/COURSE/Spring2018/IntelligentSystem/PPT_2018/why_should_i_trust_ppt.pdf">presentation about LIME</a> by Sameer Singh</p>
+
+- This story has a happy ending. Proper training that cancelled the model dependency on the snow feature improved the accuracy of the model
+
+# From Local to Global
+
+<br><br><br>
+
+![](mid/mid_limes_01.png)
+
+## Explaining through examples
+
+The LIME method was designed to explain the model's behavior locally, around the observation of interest. But we are often interested in knowing or at least getting an intuition about how the model works globally. 
+
+The LIME paper proposes two approaches to globalizing LIME. Both are based on selecting some subset of observations that will be fairly representative of the entire dataset.
+Assuming the user has time to look at LIME explanations for B observations, the question is how to select them.
+
+**Submodular pick (SP) algorithm**
+
+<p><center><img src="images/lime_pick.png" width="75%"/></center></p>
+
+Criterion for selecting observations for global explanations
+
+$$
+c(V, W, I) = \sum_{j \in P'} 1_{\exists i\in V; W_{i,j} \neq 0} I_j
+$$
+
+where $I_j$ is feature importance for feature $i$ while $P'$ is a set of features in an interpretable data space.
+
+The LIME paper presents a user-study example where the submodular picks method most effectively convinces the user how the model works.
+
+
+## Can non-experts improve a classifier?
+
+- The LIME paper describes the results of several experiments involving humans subjects
+- Very interesting results involved using explanations to improve the model, even if the improvement is generated by the knowledge and actions of non-ML-experts
+- The experiment was based on a model for a classification task based on text data
+- The explanations of the model generated by the LIME method were then shown to the participants of the experiment. That is, for each observation, the relevant words were highlighted
+- Participants could determine that some of these words were artifacts and should not be used by the model
+- The model was then trained again on the remaining features, with the artifacts removed
+- It turns out that such feature engineering using experts led to better results after several rounds
+
+
+<p><center><img src="images/lime_fe.png" width="60%"/></center><br>Figure from the LIME paper</p>
+
+
+# Anchors
+
+<br><br><br>
+
+![](mid/mid_limes_01.png)
+
+## Anchors: High-Precision Model-Agnostic Explanations 1/3
+
+- A limitation of the LIME method is the assumption that locally the behavior of a complex model can be explained by approximating it with an additive linear regression model.
+- But if there are significant interactions in the model then a local approximation with an additive model will not reflect the model's behavior well.
+- In the example below, we can see that the word 'not' has no additive effect, so its effect does not additively compound with the word 'bad'.
+- To explain the model's behavior, we need a rule that contains both variables.
+
+<p><center><img src="images/lime_anchors.png" width="60%"/></center><br>
+Figure from the [Anchors](https://homes.cs.washington.edu/~marcotcr/aaai18.pdf) paper</p>
+
+## Anchors: High-Precision Model-Agnostic Explanations 2/3
+
+- In [Anchors: High-Precision Model-Agnostic Explanations](https://homes.cs.washington.edu/~marcotcr/aaai18.pdf), the authors present an alternative explanation method that finds the shortest subset of conditions sufficient to explain the local behavior of the model.
+
+- The intuition behind the anchor is as follows: for a given observation anchors are *"sufficient"* conditions for a model prediction.
+
+- More formally: $A$ is a rule = set of logical conditions. We will say that $A$ is an *anchor* if $A(x) = 1$, i.e. observation $x$ fulfill all these conditions and probability that rule $A$ is true around $x$ is higher than $\tau$, i.e.
+
+$$
+E_{D(z|A)}[1_{f(x) = f(z)}] \geq \tau,
+$$
+
+where $D(z|A)$ is a distribution of points that fulfill the rule $A$.
+
+<p><center><img src="images/lime_anchors2.png" width="60%"/></center><br>
+Figure from the [Anchors](https://homes.cs.washington.edu/~marcotcr/aaai18.pdf) paper</p>
+
+## Anchors: High-Precision Model-Agnostic Explanations 3/3
+
+- ,,sufficient'' explanation
+- If these segments are in the picture then it is classified as a beagle
+
+<p><center><img src="images/anchors_1.png" width="90%"/></center><br>
+Figure from the [Anchors](https://homes.cs.washington.edu/~marcotcr/aaai18.pdf) paper</p>
+
+
+
+
+
+# Take-home message
+
+<br><br><br>
+
+![](mid/mid_home_01.png)
+
+---
+
+- Shapley's values are based on a concept with roots in **cooperative game theory**
+- We treat **variables as players** who, in coalitions, influence the prediction of the model
+- Shapley's values result in **additive decomposition of the reward** which is $f(x) - E f(x)$
+- Shapley's values can be calculated in a model-agnostic fashion, but for some models (linear models, tree-based models) there are more efficient ways to estimate such values
+- **From local to global**. Based on local explanations, global explanations can be constructed
+- In SHAP quite often **each variable used in the model has non zero attributions**. For models with many variables, this can be a problem
+
+- LIME method explains local model behavior with **interpretable linear surrogate model**
+- LIME generates **sparse explanations**, with K features
+- Explanations use an **interpretable feature space**, like superpixels for image data, tokens for NLP, quartiles for numeric tabular data
+
+
+
+# Hands-on
+
+<br><br><br>
+
+![](mid/mid_hands_01.png)
+
+## Step 8. Shapley values and the Break-down plots
+
+### SARS-COV-2 case study
+
+**Code snippets:** [https://rml.mi2.ai/08_shap.html](https://rml.mi2.ai/08_shap.html)
+
+![ ](figures/comic_10.png){fig-align="center"}
+
+
+# References
+
+<br><br><br>
+
+![](mid/mid_references_01.png)
+
+---
+
+## References
+
+- eXplainable Machine Learning course for Machine Learning (MSc) studies at the University of Warsaw. [https://github.com/mim-uw/eXplainableMachineLearning-2023](https://github.com/mim-uw/eXplainableMachineLearning-2023)
+- Explanatory Model Analysis. Explore, Explain, and Examine Predictive Models. With examples in R and Python.  [https://ema.drwhy.ai/](https://ema.drwhy.ai/)
+- The Hitchhiker's Guide to Responsible Machine Learning. Shorter summary of EMA book. [https://rml.mi2.ai/](https://rml.mi2.ai/)
+
