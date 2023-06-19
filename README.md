@@ -2,7 +2,9 @@
 
 Introduction to eXplainable Machine Learning (XAI)
 
-https://mesioupcub.masters.upc.edu/en/xvi-summer-school-2023/courses/introduction-to-explainable-machine-learning-xai
+https://tinyurl.com/UPC-XAI
+
+More about Summer School: https://mesioupcub.masters.upc.edu/en/xvi-summer-school-2023/courses/introduction-to-explainable-machine-learning-xai
 
 
 Day 1: [Why it is important?](https://htmlpreview.github.io/?https://raw.githubusercontent.com/pbiecek/UPC_2023/master/BarcelonaTech_day1.html)
