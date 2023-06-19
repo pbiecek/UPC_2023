@@ -65,7 +65,7 @@ Feel free to interrupt me and ask questions during the workshop!
 
 **Day 5:**
 
-- Presentation of projects and discussion
+- Presentations of projects and discussion
 
 
 ## Who? - Let's get to know each other! 1/2
@@ -180,7 +180,7 @@ Read more: [A Systematic Review of Explainable Artificial Intelligence in Terms 
   1. basic right
   2. increases trust
 
-- XAI for developers
+- XAI for developers (Red Teaming)
 
   3. debug models
   4. extract knowledge
