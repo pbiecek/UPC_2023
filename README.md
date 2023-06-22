@@ -19,3 +19,20 @@ Day 5: [Presentations](https://htmlpreview.github.io/?https://raw.githubusercont
 
 
 
+## Rules for grading project presentations
+
+The presentation together with the discussion should last no longer than 10 minutes (preferably 5 minutes for presentations and 5 minutes for questions).
+
+During the project presentation, show:
+
+- Describe the data analyzed and tell what the prediction problem is. Can explainability be important in this problem? [0-2 points]
+
+- Train at least two predictive models for this data, preferably of different classes. By what measure do you assess their performance, and how good are these models?  [0-2 points]
+
+- Present the results of global explanations (e.g., variable importance or PD). Which variables are most important?  [0-2 points]
+
+- present the results of local explanations for the selected observation (e.g., Shapley or Ceteris Paribus values). Are they similar to the global ones? Why?  [0-2 points]
+
+- summarize the presentations, present at least two observations on the analyzed models (in what they are similar, in what they are different).  [0-2 points]
+
+Last: email the presentations to me.
